@@ -3,19 +3,32 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
 puppeteer.use(StealthPlugin());
 
-let browserPromise = puppeteer.launch({
-  headless: true,
-  args: ['--no-sandbox', '--disable-setuid-sandbox']
-});
+let browserInstance; // Singleton
 
-// 🔁 Reuse browser context & block unnecessary requests
+async function getBrowser() {
+  if (!browserInstance) {
+    browserInstance = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-zygote",
+        "--single-process",
+        "--disable-gpu"
+      ]
+    });
+  }
+  return browserInstance;
+}
+
 async function preparePage() {
-  const browser = await browserPromise;
+  const browser = await getBrowser();
   const page = await browser.newPage();
 
-  // Block non-essential resources
   await page.setRequestInterception(true);
-  page.on('request', (req) => {
+  page.on("request", (req) => {
     const type = req.resourceType();
     if (["image", "stylesheet", "font"].includes(type)) {
       req.abort();
