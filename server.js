@@ -1,8 +1,8 @@
 
 import express from "express";
 import { scrapeWebsite, scrapeArticleContent } from './index.js';
-const { scrapeTwitterTrends } = require('./twitterTrends');
-const { scrapeRedditPopular } = require('./redditPopular');
+// const { scrapeTwitterTrends } = require('./twitterTrends');
+// const { scrapeRedditPopular } = require('./redditPopular');
 import websiteConfigs from './website-config.js';
 
 const app = express();
@@ -62,29 +62,29 @@ app.get('/scrape', async (req, res) => {
   }
 });
 
-// New route for Twitter trends
-app.get('/twitter-trends', async (req, res) => {
-  try {
-    console.log('Fetching Twitter trends...');
-    const trends = await scrapeTwitterTrends();
-    res.json(trends);
-  } catch (error) {
-    console.error('Error in /twitter-trends route:', error);
-    res.status(500).json({ error: 'Failed to fetch Twitter trends' });
-  }
-});
+// // New route for Twitter trends
+// app.get('/twitter-trends', async (req, res) => {
+//   try {
+//     console.log('Fetching Twitter trends...');
+//     const trends = await scrapeTwitterTrends();
+//     res.json(trends);
+//   } catch (error) {
+//     console.error('Error in /twitter-trends route:', error);
+//     res.status(500).json({ error: 'Failed to fetch Twitter trends' });
+//   }
+// });
 
-// New route for Reddit popular posts
-app.get('/reddit-popular', async (req, res) => {
-  try {
-    console.log('Fetching Reddit popular posts...');
-    const posts = await scrapeRedditPopular();
-    res.json(posts);
-  } catch (error) {
-    console.error('Error in /reddit-popular route:', error);
-    res.status(500).json({ error: 'Failed to fetch Reddit popular posts' });
-  }
-});
+// // New route for Reddit popular posts
+// app.get('/reddit-popular', async (req, res) => {
+//   try {
+//     console.log('Fetching Reddit popular posts...');
+//     const posts = await scrapeRedditPopular();
+//     res.json(posts);
+//   } catch (error) {
+//     console.error('Error in /reddit-popular route:', error);
+//     res.status(500).json({ error: 'Failed to fetch Reddit popular posts' });
+//   }
+// });
 
 // Start the Express server
 app.listen(port, '::', () => {
