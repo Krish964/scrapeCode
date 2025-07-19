@@ -3,10 +3,11 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
 puppeteer.use(StealthPlugin());
 
-let browserInstance; // Singleton
+let browserInstance;
 
 async function getBrowser() {
   if (!browserInstance) {
+    console.log("🟡 Launching new Puppeteer browser...");
     browserInstance = await puppeteer.launch({
       headless: true,
       args: [
@@ -19,14 +20,19 @@ async function getBrowser() {
         "--disable-gpu"
       ]
     });
+    console.log("✅ Browser launched");
+  } else {
+    console.log("📦 Using existing browser instance");
   }
   return browserInstance;
 }
 
 async function preparePage() {
+  console.log("🟡 Preparing new page...");
   const browser = await getBrowser();
   const page = await browser.newPage();
 
+  console.log("🟡 Enabling request interception...");
   await page.setRequestInterception(true);
   page.on("request", (req) => {
     const type = req.resourceType();
@@ -37,46 +43,50 @@ async function preparePage() {
     }
   });
 
+  console.log("✅ Page prepared");
   return page;
 }
 
-// 📄 Scrape full content of individual article
 async function scrapeArticleContent(articleUrl, articleSelectors) {
   try {
     console.log(`🧭 Navigating to article URL: ${articleUrl}`);
     const page = await preparePage();
 
+    console.log("🕐 Waiting for article to load...");
     await page.goto(articleUrl, {
       waitUntil: 'domcontentloaded',
       timeout: 60000
     });
-
-    // await page.waitForSelector(articleSelectors.h1Selector, { timeout: 10000 });
+    console.log("✅ Article loaded");
 
     const articleData = await page.evaluate((articleSelectors) => {
       try {
+        console.log("🟡 Inside page.evaluate for article content");
+
         const getText = (sel) => document.querySelector(sel)?.innerText.trim() || null;
         const getImage = (sel) => {
           const el = document.querySelector(sel);
           return el?.src || el?.dataset?.src || null;
         };
 
-        const shortContent = getText('.sortDec'); // from homepage card or top of article
+        const shortContent = getText('.sortDec');
 
         const paragraphs = Array.from(document.querySelectorAll(articleSelectors.pSelector))
           .map(p => p.innerText.trim())
           .filter(Boolean)
           .map(text =>
             text
-              .replace(/[\u2018\u2019\u201C\u201D]/g, '"')   // fancy quotes
-              .replace(/\\"/g, '"')                          // escaped quotes
+              .replace(/[\u2018\u2019\u201C\u201D]/g, '"')
+              .replace(/\\"/g, '"')
               .replace(/\.\.\./g, " ")
               .replace(/\.\.\//g, " ")
               .replace(/[-|•]/g, " ")
-              .replace(/[^a-zA-Z0-9.,?'"()₹%₹:;/\s]/g, "")   // unwanted characters
+              .replace(/[^a-zA-Z0-9.,?'"()₹%₹:;/\s]/g, "")
               .replace(/\s+/g, " ")
               .trim()
           );
+
+        console.log("✅ Article content scraped inside page");
 
         return {
           shortContent,
@@ -90,7 +100,8 @@ async function scrapeArticleContent(articleUrl, articleSelectors) {
       }
     }, articleSelectors);
 
-    await page.close(); // ✅ Clean up memory
+    await page.close();
+    console.log("🗑️ Page closed");
 
     if (!articleData || !articleData.paragraphs?.length) {
       console.warn("❌ Missing or empty article content.");
@@ -106,25 +117,27 @@ async function scrapeArticleContent(articleUrl, articleSelectors) {
   }
 }
 
-// 🏠 Scrape homepage and extract article metadata
 async function scrapeWebsite(url, selectors) {
   try {
     console.log(`🚀 Starting homepage scrape: ${url}`);
     const page = await preparePage();
 
+    console.log("🕐 Navigating to homepage...");
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    console.log("✅ Homepage loaded");
 
     for (const selector of selectors.waitForSelectors) {
       try {
+        console.log(`🔍 Waiting for selector: ${selector}`);
         await page.waitForSelector(selector, { timeout: 10000 });
+        console.log(`✅ Selector found: ${selector}`);
       } catch (err) {
         console.warn(`⚠️ Skipping missing selector: ${selector}`);
       }
     }
 
-
-
     const scrapedDataFromPage = await page.evaluate((selectors) => {
+      console.log("🟡 Inside page.evaluate for homepage");
       const data = [];
       const headlines = document.querySelectorAll(selectors.headlineSelector);
       const imageContainers = document.querySelectorAll(selectors.imageSelector);
@@ -148,8 +161,8 @@ async function scrapeWebsite(url, selectors) {
       return data;
     }, selectors);
 
-    await page.close(); // ✅ Clean up memory
-    console.log(`✅ Homepage scrape done: ${url}. Articles: ${scrapedDataFromPage.length}`);
+    await page.close();
+    console.log(`✅ Homepage scrape done: ${url}. Articles scraped: ${scrapedDataFromPage.length}`);
     return scrapedDataFromPage;
 
   } catch (err) {
@@ -159,102 +172,3 @@ async function scrapeWebsite(url, selectors) {
 }
 
 export { scrapeWebsite, scrapeArticleContent };
-
-
-
-
-// import puppeteer from "puppeteer-extra";
-// import StealthPlugin from "puppeteer-extra-plugin-stealth";
-
-// puppeteer.use(StealthPlugin());
-
-// const browserPromise = puppeteer.launch({
-//   headless: true,
-//   args: ["--no-sandbox", "--disable-setuid-sandbox"]
-// });
-
-// async function preparePage() {
-//   const browser = await browserPromise;
-//   const page = await browser.newPage();
-//   await page.setRequestInterception(true);
-//   page.on("request", (req) => {
-//     if (["image", "stylesheet", "font"].includes(req.resourceType())) req.abort();
-//     else req.continue();
-//   });
-//   return page;
-// }
-
-// export async function scrapeWebsite(url, selectors) {
-//   try {
-//     console.log(`🚀 Starting homepage scrape: ${url}`);
-//     const page = await preparePage();
-//     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-
-//     for (const sel of selectors.waitForSelectors) {
-//       try {
-//         await page.waitForSelector(sel, { timeout: 10000 });
-//       } catch {
-//         console.warn(`⚠️ Skipping missing selector: ${sel}`);
-//       }
-//     }
-
-//     const data = await page.evaluate((s) => {
-//       const items = [];
-//       const headlines = document.querySelectorAll(s.headlineSelector);
-//       const summaries = document.querySelectorAll(s.contentSelector);
-//       const imgs = document.querySelectorAll(s.imageSelector);
-
-//       headlines.forEach((h, i) => {
-//         items.push({
-//           title: h.innerText.trim(),
-//           articleLink: h.href,
-//           image: imgs[i]?.src || imgs[i]?.dataset?.src || "No image"
-//         });
-//       });
-//       return items;
-//     }, selectors);
-
-//     await page.close();
-//     console.log(`✅ Homepage scrape done: ${url}. Articles: ${data.length}`);
-//     return data;
-//   } catch (err) {
-//     console.error("🚫 Error scraping homepage:", err);
-//     throw err;
-//   }
-// }
-
-// export async function scrapeArticleContent(articleUrl, articleSelectors) {
-//   try {
-//     console.log(`🧭 Navigating to article: ${articleUrl}`);
-//     const page = await preparePage();
-//     await page.goto(articleUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
-
-//     const res = await page.evaluate((sel) => {
-//       const getText = (s) => document.querySelector(s)?.innerText?.trim() || null;
-//       const getImg = (s) => document.querySelector(s)?.src || null;
-
-//       const paragraphs = Array.from(document.querySelectorAll(sel.pSelector))
-//         .map(p => p.innerText.trim())
-//         .filter(Boolean)
-//         .map(t => t.replace(/\s+/g, " ").trim());
-
-//       return {
-//         shortContent: getText(sel.contentSelector),
-//         date: getText(sel.dateSelector),
-//         paragraphs,
-//         image: getImg(sel.imageSelector)
-//       };
-//     }, articleSelectors);
-
-//     await page.close();
-//     if (!res.paragraphs?.length) {
-//       console.warn("❌ Empty article content");
-//       return null;
-//     }
-//     console.log("✅ Article scraping successful");
-//     return res;
-//   } catch (err) {
-//     console.error("🚫 Error scraping article:", err);
-//     return null;
-//   }
-// }
