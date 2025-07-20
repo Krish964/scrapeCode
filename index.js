@@ -1,31 +1,21 @@
-
-import puppeteer from "puppeteer-extra";
+import puppeteer from "puppeteer-core"; // ⬅️ important
+import chromium from "@sparticuz/chromium"; // ⬅️ for Railway
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import puppeteerExtra from "puppeteer-extra";
 
-puppeteer.use(StealthPlugin());
+puppeteerExtra.use(StealthPlugin());
 
 let browserInstance;
 
 async function getBrowser() {
   if (!browserInstance) {
-    console.log("🟡 Launching new Puppeteer browser...");
+    console.log("🟡 Launching Puppeteer browser (Railway friendly)...");
 
-    const isProduction = process.env.NODE_ENV === "production";
-
-    browserInstance = await puppeteer.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-zygote",
-        "--single-process",
-        "--disable-gpu"
-      ],
-      executablePath: isProduction
-        ? process.env.PUPPETEER_EXECUTABLE_PATH
-        : puppeteer.executablePath(),  // fallback for local dev
+    browserInstance = await puppeteerExtra.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(), // dynamic
+      headless: chromium.headless,
     });
 
     console.log("✅ Browser launched");
@@ -36,10 +26,15 @@ async function getBrowser() {
   return browserInstance;
 }
 
+
 async function preparePage() {
   console.log("🟡 Preparing new page...");
   const browser = await getBrowser();
   const page = await browser.newPage();
+
+  await page.setUserAgent(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115 Safari/537.36"
+  );
 
   console.log("🟡 Enabling request interception...");
   await page.setRequestInterception(true);
