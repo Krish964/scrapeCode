@@ -1,21 +1,32 @@
-import puppeteer from "puppeteer-core"; // ⬅️ important
-import chromium from "@sparticuz/chromium"; // ⬅️ for Railway
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import puppeteerExtra from "puppeteer-extra";
 
-puppeteerExtra.use(StealthPlugin());
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+
+puppeteer.use(StealthPlugin());
 
 let browserInstance;
 
+
 async function getBrowser() {
   if (!browserInstance) {
-    console.log("🟡 Launching Puppeteer browser (Railway friendly)...");
+    console.log("🟡 Launching new Puppeteer browser...");
 
-    browserInstance = await puppeteerExtra.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(), // dynamic
-      headless: chromium.headless,
+    const isProduction = process.env.NODE_ENV === "production";
+
+    browserInstance = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-zygote",
+        "--single-process",
+        "--disable-gpu"
+      ],
+      executablePath: isProduction
+        ? process.env.PUPPETEER_EXECUTABLE_PATH
+        : puppeteer.executablePath(),  // fallback for local dev
     });
 
     console.log("✅ Browser launched");
@@ -25,7 +36,6 @@ async function getBrowser() {
 
   return browserInstance;
 }
-
 
 async function preparePage() {
   console.log("🟡 Preparing new page...");
