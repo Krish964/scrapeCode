@@ -1,5 +1,7 @@
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
 puppeteer.use(StealthPlugin());
 
@@ -8,6 +10,9 @@ let browserInstance;
 async function getBrowser() {
   if (!browserInstance) {
     console.log("🟡 Launching new Puppeteer browser...");
+
+    const isProduction = process.env.NODE_ENV === "production";
+
     browserInstance = await puppeteer.launch({
       headless: true,
       args: [
@@ -18,12 +23,17 @@ async function getBrowser() {
         "--no-zygote",
         "--single-process",
         "--disable-gpu"
-      ]
+      ],
+      executablePath: isProduction
+        ? process.env.PUPPETEER_EXECUTABLE_PATH
+        : puppeteer.executablePath(),  // fallback for local dev
     });
+
     console.log("✅ Browser launched");
   } else {
     console.log("📦 Using existing browser instance");
   }
+
   return browserInstance;
 }
 

@@ -92,54 +92,8 @@ app.get('/scrape', async (req, res) => {
 // });
 
 // Start the Express server
-app.listen(port, '::', () => {
+app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
 
 
-
-
-// import express from "express";
-// import { scrapeWebsite, scrapeArticleContent } from "./index.js";
-// import configs from "./website-config.js";
-
-// const app = express();
-// const port = process.env.PORT || 3000;
-
-// app.get("/", (req, res) => {
-//   res.send("✅ Server is running");
-// });
-
-// app.get("/scrape", async (req, res) => {
-//   try {
-//     const site = configs.hindustanTimes;
-
-//     const homepageArticles = await scrapeWebsite(site.url, site.selectors);
-
-//     const fullArticles = [];
-
-//     for (const item of homepageArticles) {
-//       const details = await scrapeArticleContent(item.articleLink, site.articleSelectors);
-//       if (details) {
-//         fullArticles.push({
-//           ...item,
-//           date: details.date,
-//           shortContent: details.shortContent,
-//           paragraphs: details.paragraphs,
-//           image: details.image // override if needed
-//         });
-//       }
-//     }
-
-//     console.log("📦 Scraping complete, sending result");
-//     res.json({ success: true, total: fullArticles.length, data: fullArticles });
-
-//   } catch (error) {
-//     console.error("❌ Error during scraping:", error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// app.listen(port, () => {
-//   console.log(`🚀 Server running on http://localhost:${port}`);
-// });
