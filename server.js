@@ -8,7 +8,12 @@ import websiteConfigs from './website-config.js';
 const app = express();
 const port = process.env.PORT || 3000;
 
-let scrapedData = {}; // Store scraped data for all websites
+let scrapedData = {};// Store scraped data for all websites
+
+
+app.get("/", (req, res) => {
+  res.send("Hello from Render!");
+});
 
 // Function to scrape all websites
 async function scrapeAllWebsites() {
